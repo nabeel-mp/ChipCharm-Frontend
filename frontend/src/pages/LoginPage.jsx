@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import logo from '../assets/ChipcharmLogo.png';
 
 export default function LoginPage() {
   const { login }  = useAuth();
@@ -45,15 +46,14 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-sm fade-up">
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 flex flex-col items-center">
           <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white p-1.5 mb-4 overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #f4c430, #e9a800)',
-              boxShadow: '0 8px 32px rgba(244,196,48,0.4)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
             }}
           >
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20, color: '#0d2b1e' }}>CC</span>
+            <img src={logo} alt="ChipCharm Logo" className="w-full h-full object-contain" />
           </div>
           <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 28, color: '#e8f5ef', letterSpacing: '-0.02em' }}>
             ChipCharm

@@ -27,6 +27,17 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
+// SVG Icon definitions
+const icons = {
+  store: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  factory: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>,
+  box: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+  check: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  gift: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
+  folder: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>,
+  weight: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-11z"/></svg>,
+};
+
 export default function DashboardPage() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -73,17 +84,17 @@ export default function DashboardPage() {
             <>
               {/* Primary stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-                <StatCard label="Current Stock"   value={data?.current_stock_kg?.toFixed(1)}  unit="kg"    icon="🏪" accent="gold"   />
-                <StatCard label="Today Produced"  value={data?.todays_produced_kg?.toFixed(1)} unit="kg"    icon="🏭" accent="blue"   />
-                <StatCard label="In Shop"         value={inShop?.total_units ?? 0}             unit="units" icon="📦" accent="green"  />
-                <StatCard label="Sold"            value={sold?.total_units ?? 0}               unit="units" icon="✅" accent="purple" />
+                <StatCard label="Current Stock"   value={data?.current_stock_kg?.toFixed(1)}  unit="kg"    icon={icons.store}   accent="gold"   />
+                <StatCard label="Today Produced"  value={data?.todays_produced_kg?.toFixed(1)} unit="kg"    icon={icons.factory} accent="blue"   />
+                <StatCard label="In Shop"         value={inShop?.total_units ?? 0}             unit="units" icon={icons.box}     accent="green"  />
+                <StatCard label="Sold"            value={sold?.total_units ?? 0}               unit="units" icon={icons.check}   accent="purple" />
               </div>
 
               {/* Secondary stats */}
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <StatCard label="Samples Given"  value={sample?.total_units ?? 0}               unit="units" icon="🎁" accent="red"   />
-                <StatCard label="Opening Stock"  value={data?.opening_stock_kg?.toFixed(1)}     unit="kg"    icon="📂" accent="gold"  />
-                <StatCard label="In Shop (kg)"   value={inShop?.total_kg?.toFixed(1) ?? '0.0'} unit="kg"    icon="⚖️" accent="green" />
+                <StatCard label="Samples Given"  value={sample?.total_units ?? 0}               unit="units" icon={icons.gift}   accent="red"   />
+                <StatCard label="Opening Stock"  value={data?.opening_stock_kg?.toFixed(1)}     unit="kg"    icon={icons.folder} accent="gold"  />
+                <StatCard label="In Shop (kg)"   value={inShop?.total_kg?.toFixed(1) ?? '0.0'} unit="kg"    icon={icons.weight} accent="green" />
               </div>
 
               {/* Chart */}

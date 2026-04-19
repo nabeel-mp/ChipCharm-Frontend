@@ -174,8 +174,12 @@ export default function StockPage() {
                   </td></tr>
                 ) : entries.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-16">
-                    <div>
-                      <p style={{ fontSize: 32, marginBottom: 8 }}>📋</p>
+                    <div className="flex flex-col items-center">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#52b788" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-70">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                        <path d="M9 14h6"/><path d="M9 10h6"/>
+                      </svg>
                       <p style={{ color: '#52b788', fontFamily: 'Syne, sans-serif', fontWeight: 600 }}>No entries yet</p>
                       <p style={{ color: '#2d6a4f', fontSize: 13, marginTop: 4 }}>Add your first production entry above</p>
                     </div>

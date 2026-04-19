@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/ChipcharmLogo.png';
 
 const links = [
   {
@@ -44,15 +45,12 @@ export default function Sidebar() {
       <div className="px-6 py-6 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-white p-1 overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #f4c430 0%, #e9a800 100%)',
-              boxShadow: '0 4px 16px rgba(244,196,48,0.35)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
             }}
           >
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 14, color: '#0d2b1e' }}>
-              CC
-            </span>
+            <img src={logo} alt="ChipCharm Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15, color: '#e8f5ef', letterSpacing: '0.01em' }}>

@@ -271,8 +271,11 @@ export default function PackedPage() {
                   </td></tr>
                 ) : items.length === 0 ? (
                   <tr><td colSpan={8} className="text-center py-16">
-                    <div>
-                      <p style={{ fontSize: 32, marginBottom: 8 }}>📦</p>
+                    <div className="flex flex-col items-center">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#52b788" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-70">
+                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                      </svg>
                       <p style={{ color: '#52b788', fontFamily: 'Syne, sans-serif', fontWeight: 600 }}>No packed items</p>
                       <p style={{ color: '#2d6a4f', fontSize: 13, marginTop: 4 }}>Start by adding your first packed entry</p>
                     </div>
