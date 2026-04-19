@@ -1,93 +1,166 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 
 export default function LoginPage() {
-  const { login } = useAuth();
-  const navigate  = useNavigate();
-  const [form, setForm]   = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const { login }  = useAuth();
+  const navigate   = useNavigate();
+  const toast      = useToast();
+  const [form, setForm]       = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await login(form.email, form.password);
+      toast.success('Welcome back!', 'Logged in successfully.');
       navigate('/');
     } catch {
-      setError('Invalid email or password');
+      toast.error('Login failed', 'Invalid email or password. Try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100
-                    flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #071510 0%, #0d2b1e 50%, #0a1e14 100%)' }}
+    >
+      {/* Background blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute w-96 h-96 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(244,196,48,0.06) 0%, transparent 70%)', top: '-10%', right: '-5%' }} />
+        <div className="absolute w-80 h-80 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(64,145,108,0.08) 0%, transparent 70%)', bottom: '-10%', left: '-5%' }} />
+        {/* Grid pattern */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)`,
+          backgroundSize: '48px 48px'
+        }} />
+      </div>
 
-        {/* Logo / Brand */}
+      <div className="relative w-full max-w-sm fade-up">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16
-                          bg-orange-500 rounded-2xl mb-4 shadow-lg">
-            <span className="text-white text-2xl font-bold">CC</span>
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            style={{
+              background: 'linear-gradient(135deg, #f4c430, #e9a800)',
+              boxShadow: '0 8px 32px rgba(244,196,48,0.4)',
+            }}
+          >
+            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20, color: '#0d2b1e' }}>CC</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">ChipCharm</h1>
-          <p className="text-gray-500 text-sm mt-1">Inventory Management</p>
+          <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 28, color: '#e8f5ef', letterSpacing: '-0.02em' }}>
+            ChipCharm
+          </h1>
+          <p style={{ color: '#52b788', fontSize: 14, marginTop: 4 }}>Inventory Management System</p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-4 py-3
-                          rounded-lg mb-4 border border-red-200">
-            {error}
-          </div>
-        )}
+        {/* Card */}
+        <div
+          className="rounded-3xl p-8"
+          style={{
+            background: 'linear-gradient(145deg, rgba(19,45,32,0.9), rgba(13,27,20,0.9))',
+            border: '1px solid rgba(244,196,48,0.12)',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 20, color: '#e8f5ef', marginBottom: 24 }}>
+            Sign In
+          </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3
-                         text-sm focus:outline-none focus:ring-2
-                         focus:ring-orange-400 focus:border-transparent"
-              placeholder="admin@chipcharm.com"
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#95d5b2', marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
+                Email address
+              </label>
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                className="cc-input w-full px-4 py-3 rounded-xl text-sm"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#e8f5ef',
+                  fontFamily: 'DM Sans, sans-serif',
+                  transition: 'all 0.2s',
+                }}
+                placeholder="admin@chipcharm.com"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3
-                         text-sm focus:outline-none focus:ring-2
-                         focus:ring-orange-400 focus:border-transparent"
-              placeholder="••••••••"
-            />
-          </div>
+            {/* Password */}
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#95d5b2', marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  required
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  className="cc-input w-full px-4 py-3 rounded-xl text-sm pr-12"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#e8f5ef',
+                    fontFamily: 'DM Sans, sans-serif',
+                    transition: 'all 0.2s',
+                    width: '100%',
+                  }}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  style={{ color: '#52b788' }}
+                >
+                  {showPass ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white
-                       font-semibold py-3 rounded-xl transition-colors
-                       disabled:opacity-60"
-          >
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="cc-btn-primary w-full py-3.5 rounded-xl text-sm mt-2"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                  </svg>
+                  Signing in…
+                </span>
+              ) : 'Sign In →'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center mt-6 text-xs" style={{ color: '#2d6a4f' }}>
+          ChipCharm © {new Date().getFullYear()} · Inventory System
+        </p>
       </div>
     </div>
   );
