@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Sidebar  from '../components/Sidebar';
-import StatCard from '../components/StatCard';
+import StatCard from '../components/StateCard';
 import api      from '../api/axios';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
