@@ -119,3 +119,26 @@ h1, h2, h3, .font-display {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Horizontal Scrollbar for Responsive Tables */
+.custom-scroll::-webkit-scrollbar { 
+  height: 6px; 
+}
+.custom-scroll::-webkit-scrollbar-track { 
+  background: rgba(0,0,0,0.15); 
+  border-radius: 0 0 16px 16px;
+}
+.custom-scroll::-webkit-scrollbar-thumb { 
+  background: var(--moss); 
+  border-radius: 4px; 
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover { 
+  background: var(--leaf); 
+}
+
+/* Safe area inset helper for modern mobile devices (iPhone notch/bottom bar) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

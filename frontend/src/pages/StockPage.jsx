@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import api     from '../api/axios';
 import { useToast } from '../components/Toast';
+import logo    from '../assets/ChipcharmLogo.png';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -53,7 +54,7 @@ export default function StockPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this entry?')) return;
+    if (!window.confirm('Delete this entry?')) return;
     try {
       await api.delete(`/stock/${id}`);
       fetchEntries();
@@ -66,25 +67,48 @@ export default function StockPage() {
   return (
     <div className="flex" style={{ minHeight: '100vh', background: '#0a1e14' }}>
       <Sidebar />
-      <main className="ml-64 flex-1 p-8">
+      <main className="md:ml-64 flex-1 p-5 md:p-8 pb-28 md:pb-8 w-full max-w-[100vw] overflow-x-hidden">
         <div className="max-w-4xl mx-auto">
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-8 fade-up">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-1.5 h-6 rounded-full" style={{ background: '#f4c430' }} />
-                <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 26, color: '#e8f5ef', letterSpacing: '-0.02em' }}>
-                  Daily Stock
-                </h1>
+          <div className="mb-6 md:mb-8 fade-up">
+            <div className="flex justify-between items-start mb-5 md:mb-0">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-6 rounded-full" style={{ background: '#f4c430' }} />
+                  <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 26, color: '#e8f5ef', letterSpacing: '-0.02em' }}>
+                    Daily Stock
+                  </h1>
+                </div>
+                <p style={{ color: '#52b788', fontSize: 13, paddingLeft: 14 }}>Track daily chip production batches</p>
               </div>
-              <p style={{ color: '#52b788', fontSize: 14, paddingLeft: 14 }}>Track daily chip production batches</p>
+
+              {/* Top Right Logo (Visible on mobile) */}
+              <div 
+                className="md:hidden w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-white p-1 overflow-hidden"
+                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.35)' }}
+              >
+                <img src={logo} alt="ChipCharm Logo" className="w-full h-full object-contain" />
+              </div>
+
+              {/* Desktop Add Button */}
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="hidden md:flex cc-btn-primary items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Add Entry
+              </button>
             </div>
+
+            {/* Mobile Add Button */}
             <button
               onClick={() => setShowForm(!showForm)}
-              className="cc-btn-primary flex items-center gap-2 px-5 py-3 rounded-xl text-sm"
+              className="md:hidden cc-btn-primary w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-sm shadow-lg"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
               Add Entry
@@ -94,7 +118,7 @@ export default function StockPage() {
           {/* Form */}
           {showForm && (
             <div
-              className="rounded-2xl p-6 mb-6 fade-up"
+              className="rounded-2xl p-5 md:p-6 mb-6 fade-up"
               style={{
                 background: 'linear-gradient(145deg, #132d20, #0f2419)',
                 border: '1px solid rgba(244,196,48,0.15)',
@@ -105,7 +129,7 @@ export default function StockPage() {
                 New Production Entry
               </h2>
               <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</label>
                     <input type="date" required value={form.date}
@@ -119,20 +143,20 @@ export default function StockPage() {
                       className="cc-input" style={inputStyle} placeholder="e.g. 50" />
                   </div>
                 </div>
-                <div className="mb-5">
+                <div className="mb-6">
                   <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Notes (optional)</label>
                   <input type="text" value={form.notes}
                     onChange={e => setForm({ ...form, notes: e.target.value })}
                     className="cc-input" style={inputStyle} placeholder="Any notes for today…" />
                 </div>
-                <div className="flex gap-3">
-                  <button type="submit" disabled={saving} className="cc-btn-primary flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button type="submit" disabled={saving} className="cc-btn-primary flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 rounded-xl text-sm w-full sm:w-auto">
                     {saving ? (
                       <><svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Saving…</>
                     ) : 'Save Entry'}
                   </button>
                   <button type="button" onClick={() => setShowForm(false)}
-                    className="px-5 py-2.5 rounded-xl text-sm transition-all"
+                    className="px-5 py-3.5 sm:py-3 rounded-xl text-sm transition-all w-full sm:w-auto text-center"
                     style={{ color: '#52b788', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(255,255,255,0.08)' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -144,21 +168,21 @@ export default function StockPage() {
             </div>
           )}
 
-          {/* Table */}
+          {/* Table Container */}
           <div
-            className="rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-x-auto w-full custom-scroll"
             style={{
               background: 'linear-gradient(145deg, #132d20, #0f2419)',
               border: '1px solid rgba(255,255,255,0.06)',
               boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
             }}
           >
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   {['Date', 'Opening kg', 'Produced kg', 'Closing kg', 'Notes', ''].map((h, i) => (
                     <th key={i}
-                      className={`py-4 px-5 text-xs font-semibold uppercase tracking-widest ${i > 0 && i < 4 ? 'text-right' : 'text-left'}`}
+                      className={`py-4 px-5 text-xs font-semibold uppercase tracking-widest whitespace-nowrap ${i > 0 && i < 4 ? 'text-right' : 'text-left'}`}
                       style={{ color: '#52b788', fontFamily: 'Syne, sans-serif', background: 'rgba(0,0,0,0.15)' }}
                     >{h}</th>
                   ))}
@@ -187,14 +211,14 @@ export default function StockPage() {
                 ) : entries.map((e, idx) => (
                   <tr key={e._id} className="table-row"
                     style={{ borderBottom: idx < entries.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                    <td className="px-5 py-4" style={{ color: '#e8f5ef', fontFamily: 'Syne, sans-serif', fontWeight: 600 }}>
+                    <td className="px-5 py-4 whitespace-nowrap" style={{ color: '#e8f5ef', fontFamily: 'Syne, sans-serif', fontWeight: 600 }}>
                       {new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-5 py-4 text-right" style={{ color: '#7fb89a' }}>{e.opening_stock_kg?.toFixed(2)}</td>
-                    <td className="px-5 py-4 text-right font-bold" style={{ color: '#f4c430', fontFamily: 'Syne, sans-serif' }}>{e.produced_kg?.toFixed(2)}</td>
-                    <td className="px-5 py-4 text-right font-bold" style={{ color: '#52b788', fontFamily: 'Syne, sans-serif' }}>{e.closing_stock_kg?.toFixed(2)}</td>
-                    <td className="px-5 py-4" style={{ color: '#2d6a4f', fontSize: 12 }}>{e.notes || '—'}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 text-right whitespace-nowrap" style={{ color: '#7fb89a' }}>{e.opening_stock_kg?.toFixed(2)}</td>
+                    <td className="px-5 py-4 text-right font-bold whitespace-nowrap" style={{ color: '#f4c430', fontFamily: 'Syne, sans-serif' }}>{e.produced_kg?.toFixed(2)}</td>
+                    <td className="px-5 py-4 text-right font-bold whitespace-nowrap" style={{ color: '#52b788', fontFamily: 'Syne, sans-serif' }}>{e.closing_stock_kg?.toFixed(2)}</td>
+                    <td className="px-5 py-4 whitespace-nowrap truncate max-w-[150px]" style={{ color: '#2d6a4f', fontSize: 12 }}>{e.notes || '—'}</td>
+                    <td className="px-5 py-4 text-right whitespace-nowrap">
                       <button onClick={() => handleDelete(e._id)}
                         className="px-3 py-1.5 rounded-lg text-xs transition-all"
                         style={{ color: '#7fb89a', border: '1px solid rgba(255,255,255,0.06)', fontFamily: 'DM Sans, sans-serif' }}
