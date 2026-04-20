@@ -33,6 +33,13 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
 
+  // Highlight the role of the user visually
+  const roleColors = {
+    owner: '#f4c430',
+    manager: '#60a5fa',
+    supplier: '#c084fc'
+  };
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -105,8 +112,9 @@ export default function Sidebar() {
               <p className="text-sm font-medium truncate" style={{ color: '#e8f5ef', fontFamily: 'DM Sans, sans-serif' }}>
                 {user?.name || 'User'}
               </p>
-              <p className="text-xs truncate" style={{ color: '#52b788' }}>
-                {user?.email || ''}
+              {/* Display role badge */}
+              <p className="text-[10px] uppercase font-bold tracking-wider mt-0.5" style={{ color: roleColors[user?.role] || '#52b788' }}>
+                {user?.role || 'Supplier'}
               </p>
             </div>
           </div>

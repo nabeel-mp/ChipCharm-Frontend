@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import api from '../api/axios';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
+import { PRODUCT_TYPES } from './StockPage';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -12,15 +14,17 @@ const PACKING_TYPES = [
 ];
 
 const STATUSES = [
-  { value: 'in_shop', label: 'In Shop' },
-  { value: 'sold',    label: 'Sold'    },
-  { value: 'sample',  label: 'Sample'  },
+  { value: 'in_shop',   label: 'In Shop' },
+  { value: 'delivered', label: 'Delivered' }, // Added for suppliers
+  { value: 'sold',      label: 'Sold'    },
+  { value: 'sample',    label: 'Sample'  },
 ];
 
 const statusStyle = {
-  in_shop: { bg: 'rgba(82,183,136,0.12)', color: '#52b788',  border: 'rgba(82,183,136,0.25)'  },
-  sold:    { bg: 'rgba(59,130,246,0.12)', color: '#60a5fa',  border: 'rgba(59,130,246,0.25)'  },
-  sample:  { bg: 'rgba(168,85,247,0.12)', color: '#c084fc',  border: 'rgba(168,85,247,0.25)'  },
+  in_shop:   { bg: 'rgba(82,183,136,0.12)', color: '#52b788',  border: 'rgba(82,183,136,0.25)'  },
+  delivered: { bg: 'rgba(244,196,48,0.12)', color: '#f4c430',  border: 'rgba(244,196,48,0.25)'  },
+  sold:      { bg: 'rgba(59,130,246,0.12)', color: '#60a5fa',  border: 'rgba(59,130,246,0.25)'  },
+  sample:    { bg: 'rgba(168,85,247,0.12)', color: '#c084fc',  border: 'rgba(168,85,247,0.25)'  },
 };
 
 const typeStyle = {
@@ -42,22 +46,36 @@ const inputStyle = {
   transition: 'border-color 0.2s ease',
 };
 
-const emptyForm = { date: today(), packing_type: 'normal', weight_per_unit_grams: '', quantity: '', status: 'in_shop', label: '' };
+const emptyForm = { 
+  date: today(), 
+  product_type: PRODUCT_TYPES[0], 
+  packing_type: 'normal', 
+  weight_per_unit_grams: '', 
+  quantity: '', 
+  status: 'in_shop', 
+  label: '' 
+};
 
 export default function PackedPage() {
+  const { user } = useAuth();
   const toast = useToast();
   const [items, setItems]       = useState([]);
   const [loading, setLoading]   = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState(emptyForm);
   const [saving, setSaving]     = useState(false);
-  const [filter, setFilter]     = useState({ status: '', type: '' });
+  const [filter, setFilter]     = useState({ status: '', type: '', product_type: '' });
+
+  // Only managers and owners can add or delete packed entries
+  const canManage = user?.role === 'manager' || user?.role === 'owner';
 
   const fetchItems = () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filter.status) params.append('status', filter.status);
     if (filter.type)   params.append('type',   filter.type);
+    if (filter.product_type) params.append('product_type', filter.product_type);
+    
     api.get(`/packed?${params}`)
       .then(r => setItems(r.data))
       .catch(() => toast.error('Fetch failed', 'Could not load packed items.'))
@@ -124,11 +142,7 @@ export default function PackedPage() {
     <div className="flex min-h-screen" style={{ background: '#0a1e14' }}>
       <Sidebar />
       
-      {/* Main content wrapper: 
-        - Responsive margin for sidebar (md:ml-64)
-        - Responsive padding (p-4 to p-8)
-        - min-w-0 prevents flex items from overflowing their container
-      */}
+      {/* Main content wrapper */}
       <main className="flex-1 min-w-0 md:ml-64 p-4 sm:p-6 md:p-8 pb-28 md:pb-8 w-full max-w-full overflow-x-hidden">
         <div className="max-w-6xl mx-auto w-full">
 
@@ -141,27 +155,40 @@ export default function PackedPage() {
                   Packed Items
                 </h1>
               </div>
-              <p style={{ color: '#52b788', fontSize: 13, paddingLeft: 14 }}>Track packing, sales and samples</p>
+              <p style={{ color: '#52b788', fontSize: 13, paddingLeft: 14 }}>Track packing, deliveries and sales</p>
             </div>
             
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="cc-btn-primary w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 sm:py-3 rounded-xl text-sm font-medium shrink-0 transition-transform active:scale-95"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              {showForm ? 'Close Form' : 'Add Packed'}
-            </button>
+            {/* Only show Add button to Managers and Owners */}
+            {canManage && (
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="cc-btn-primary w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 sm:py-3 rounded-xl text-sm font-medium shrink-0 transition-transform active:scale-95"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  {showForm ? (
+                    <>
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </>
+                  ) : (
+                    <>
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </>
+                  )}
+                </svg>
+                {showForm ? 'Close Form' : 'Add Packed'}
+              </button>
+            )}
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6 w-full">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6 w-full">
             {[
+              { label: 'All Products', key: 'product_type', options: PRODUCT_TYPES.map(p => ({value: p, label: p})) },
               { label: 'All Statuses', key: 'status', options: STATUSES },
-              { label: 'All Types',    key: 'type',   options: PACKING_TYPES },
+              { label: 'All Packaging', key: 'type',   options: PACKING_TYPES },
             ].map(({ label, key, options }) => (
-              <div key={key} className="w-full sm:w-48 relative">
+              <div key={key} className="flex-1 sm:w-48 relative">
                 <select
                   value={filter[key]}
                   onChange={e => setFilter({ ...filter, [key]: e.target.value })}
@@ -171,7 +198,6 @@ export default function PackedPage() {
                   <option value="">{label}</option>
                   {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
-                {/* Custom dropdown arrow to replace native appearance */}
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#52b788]">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
                 </div>
@@ -180,7 +206,7 @@ export default function PackedPage() {
           </div>
 
           {/* Form */}
-          {showForm && (
+          {showForm && canManage && (
             <div
               className="rounded-2xl p-5 sm:p-6 mb-8 fade-up"
               style={{
@@ -193,31 +219,46 @@ export default function PackedPage() {
                 New Packed Entry
               </h2>
               <form onSubmit={handleSubmit}>
-                {/* Responsive Grid: 1 col on mobile, 2 on tablet, 3 on desktop */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
-                  {[
-                    { label: 'Date', type: 'date', field: 'date', required: true },
-                    { label: 'Label (optional)', type: 'text', field: 'label', placeholder: 'e.g. 500g Masala Jar' },
-                    { label: 'Weight/Unit (g)', type: 'number', field: 'weight_per_unit_grams', placeholder: 'e.g. 500', required: true, min: 1 },
-                    { label: 'Quantity (units)', type: 'number', field: 'quantity', placeholder: 'e.g. 20', required: true, min: 1 },
-                  ].map(({ label, type, field, required, placeholder, min }) => (
-                    <div key={field} className="w-full">
-                      <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
-                      <input type={type} required={required} min={min} value={form[field]} placeholder={placeholder}
-                        onChange={e => setForm({ ...form, [field]: e.target.value })}
-                        className="cc-input" style={inputStyle} />
-                    </div>
-                  ))}
-                  
-                  {/* Select Fields embedded within the same grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
                   <div className="w-full">
-                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Packing Type</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Date</label>
+                    <input type="date" required value={form.date}
+                      onChange={e => setForm({ ...form, date: e.target.value })}
+                      className="cc-input" style={inputStyle} />
+                  </div>
+                  <div className="w-full">
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Product Type</label>
+                    <select value={form.product_type} onChange={e => setForm({ ...form, product_type: e.target.value })} className="cc-input" style={{...inputStyle, appearance: 'none'}}>
+                      {PRODUCT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="w-full lg:col-span-2">
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Label (optional)</label>
+                    <input type="text" value={form.label} placeholder="e.g. 500g Masala Jar"
+                      onChange={e => setForm({ ...form, label: e.target.value })}
+                      className="cc-input" style={inputStyle} />
+                  </div>
+                  
+                  <div className="w-full">
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Packing Type</label>
                     <select value={form.packing_type} onChange={e => setForm({ ...form, packing_type: e.target.value })} className="cc-input" style={{...inputStyle, appearance: 'none'}}>
                       {PACKING_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                   <div className="w-full">
-                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</label>
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Weight/Unit (g)</label>
+                    <input type="number" required min="1" value={form.weight_per_unit_grams} placeholder="e.g. 500"
+                      onChange={e => setForm({ ...form, weight_per_unit_grams: e.target.value })}
+                      className="cc-input" style={inputStyle} />
+                  </div>
+                  <div className="w-full">
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Quantity (units)</label>
+                    <input type="number" required min="1" value={form.quantity} placeholder="e.g. 20"
+                      onChange={e => setForm({ ...form, quantity: e.target.value })}
+                      className="cc-input" style={inputStyle} />
+                  </div>
+                  <div className="w-full">
+                    <label style={{ display: 'block', fontSize: 12, color: '#52b788', marginBottom: 8, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase' }}>Status</label>
                     <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="cc-input" style={{...inputStyle, appearance: 'none'}}>
                       {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
@@ -253,7 +294,7 @@ export default function PackedPage() {
             </div>
           )}
 
-          {/* Table Container - Enclosed overflow specifically for mobile screens */}
+          {/* Table Container */}
           <div className="rounded-2xl w-full flex flex-col"
             style={{
               background: 'linear-gradient(145deg, #132d20, #0f2419)',
@@ -262,12 +303,12 @@ export default function PackedPage() {
             }}
           >
             <div className="overflow-x-auto w-full custom-scroll" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <table className="w-full text-sm min-w-[850px] text-left">
+              <table className="w-full text-sm min-w-[950px] text-left">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Date','Label','Type','Wt/Unit','Qty','Total kg','Status',''].map((h, i) => (
+                    {['Date','Product','Label','Type','Wt/Unit','Qty','Total kg','Status',''].map((h, i) => (
                       <th key={i}
-                        className={`py-4 px-4 text-xs font-semibold uppercase tracking-widest whitespace-nowrap ${[3,4,5].includes(i) ? 'text-right' : 'text-left'}`}
+                        className={`py-4 px-4 text-xs font-semibold uppercase tracking-widest whitespace-nowrap ${[4,5,6].includes(i) ? 'text-right' : 'text-left'}`}
                         style={{ color: '#52b788', fontFamily: 'Syne, sans-serif', background: 'rgba(0,0,0,0.15)' }}
                       >
                         {h}
@@ -277,14 +318,14 @@ export default function PackedPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {loading ? (
-                    <tr><td colSpan={8} className="text-center py-16">
+                    <tr><td colSpan={9} className="text-center py-16">
                       <div className="flex items-center justify-center gap-2">
                         <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f4c430" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
                         <span style={{ color: '#52b788' }}>Loading items…</span>
                       </div>
                     </td></tr>
                   ) : items.length === 0 ? (
-                    <tr><td colSpan={8} className="text-center py-20 px-4">
+                    <tr><td colSpan={9} className="text-center py-20 px-4">
                       <div className="flex flex-col items-center">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#52b788" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-70">
                           <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
@@ -300,6 +341,9 @@ export default function PackedPage() {
                       <tr key={item._id} className="table-row hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 py-4 whitespace-nowrap" style={{ color: '#7fb89a', fontSize: 13 }}>
                           {new Date(item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td className="px-4 py-4 font-medium whitespace-nowrap" style={{ color: '#e8f5ef', fontSize: 13 }}>
+                          {item.product_type}
                         </td>
                         <td className="px-4 py-4 font-medium whitespace-nowrap" style={{ color: '#e8f5ef', fontFamily: 'Syne, sans-serif', fontSize: 13 }}>
                           {item.label || '—'}
@@ -320,7 +364,7 @@ export default function PackedPage() {
                           {item.total_weight_kg?.toFixed(3)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap relative">
-                           {/* Wrapping select to contain fixed widths without breaking table constraints */}
+                           {/* Suppliers can also change status (e.g., to Delivered) */}
                            <div className="w-[120px]">
                               <select
                                 value={item.status}
@@ -333,13 +377,15 @@ export default function PackedPage() {
                            </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-right">
-                          <button onClick={() => handleDelete(item._id)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
-                            style={{ color: '#7fb89a', border: '1px solid rgba(255,255,255,0.06)', fontFamily: 'DM Sans, sans-serif' }}
-                            title="Delete Item"
-                          >
-                            Delete
-                          </button>
+                          {canManage && (
+                            <button onClick={() => handleDelete(item._id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                              style={{ color: '#7fb89a', border: '1px solid rgba(255,255,255,0.06)', fontFamily: 'DM Sans, sans-serif' }}
+                              title="Delete Item"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
