@@ -7,6 +7,7 @@ import { PRODUCT_TYPES } from './StockPage';
 
 const today = () => new Date().toISOString().split('T')[0];
 
+// The values here strictly match the backend Mongoose schema enum
 export const PACKING_TYPES = [
   { value: 'normal_half_kg', label: 'Normal 500g' },
   { value: 'normal_1kg',     label: 'Normal 1 kg' },
