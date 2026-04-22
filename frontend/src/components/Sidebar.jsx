@@ -44,6 +44,16 @@ const links = [
     )
   },
   {
+    to: '/supplier-inventory', label: 'Sup. Stock', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    )
+  },
+  {
     to: '/finance', label: 'Finance', icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
@@ -146,7 +156,7 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Nav — shows 5 links + more */}
+      {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-40 flex items-center justify-around px-1"
         style={{
           background: 'rgba(13, 43, 30, 0.97)',
@@ -180,9 +190,8 @@ export default function Sidebar() {
             </svg>
             <span style={{ fontSize: '9px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500, marginTop: 3 }}>More</span>
           </div>
-          {/* Popup menu */}
           <div className="absolute bottom-full right-0 mb-2 rounded-2xl overflow-hidden opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-all"
-            style={{ background: '#0d2b1e', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 32px rgba(0,0,0,0.5)', minWidth: 160 }}>
+            style={{ background: '#0d2b1e', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 32px rgba(0,0,0,0.5)', minWidth: 170 }}>
             {links.slice(5).map(({ to, label, icon }) => (
               <NavLink key={to} to={to}
                 className="flex items-center gap-3 px-4 py-3 text-sm transition-colors"
