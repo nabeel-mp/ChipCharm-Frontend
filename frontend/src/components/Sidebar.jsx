@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/ChipcharmLogo.png';
@@ -76,12 +77,18 @@ const mobileLinks = links.slice(0, 5);
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const roleColors = {
     owner:    '#f4c430',
     manager:  '#60a5fa',
     supplier: '#c084fc'
   };
+
+  // Ensure menu closes when route changes (useful if back button is pressed)
+  useEffect(() => {
+    setIsMoreOpen(false);
+  }, [location.pathname]);
 
   return (
     <>
@@ -167,10 +174,20 @@ export default function Sidebar() {
           paddingTop: '8px',
           boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
         }}>
+        
+        {/* Invisible Full-Screen Overlay to close the menu when clicking outside */}
+        {isMoreOpen && (
+          <div 
+            className="fixed inset-0 z-[-1]" 
+            onClick={() => setIsMoreOpen(false)} 
+            style={{ height: '100vh' }}
+          />
+        )}
+
         {mobileLinks.map(({ to, label, icon }) => {
           const isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           return (
-            <NavLink key={to} to={to} end={to === '/'}
+            <NavLink key={to} to={to} end={to === '/'} onClick={() => setIsMoreOpen(false)}
               className="flex flex-col items-center justify-center flex-1 min-w-0 transition-colors py-1"
               style={{ color: isActive ? '#f4c430' : '#7fb89a' }}>
               <span style={{ transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
@@ -182,25 +199,35 @@ export default function Sidebar() {
             </NavLink>
           );
         })}
-        {/* More menu for remaining links */}
-        <div className="flex flex-col items-center justify-center flex-1 min-w-0 py-1 relative group">
-          <div className="flex flex-col items-center" style={{ color: links.slice(5).some(l => location.pathname.startsWith(l.to)) ? '#f4c430' : '#7fb89a' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
-            </svg>
-            <span style={{ fontSize: '9px', fontFamily: 'DM Sans, sans-serif', fontWeight: 500, marginTop: 3 }}>More</span>
-          </div>
-          <div className="absolute bottom-full right-0 mb-2 rounded-2xl overflow-hidden opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-all"
-            style={{ background: '#0d2b1e', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 32px rgba(0,0,0,0.5)', minWidth: 170 }}>
+        
+        {/* More Menu Container */}
+        <div className="flex flex-col flex-1 min-w-0 py-1 relative">
+          <button 
+            onClick={() => setIsMoreOpen(!isMoreOpen)}
+            className="flex flex-col items-center justify-center w-full outline-none transition-colors"
+            style={{ color: links.slice(5).some(l => location.pathname.startsWith(l.to)) || isMoreOpen ? '#f4c430' : '#7fb89a' }}>
+            <span style={{ transform: isMoreOpen ? 'scale(1.15)' : 'scale(1)', transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+              </svg>
+            </span>
+            <span style={{ fontSize: '9px', fontFamily: 'DM Sans, sans-serif', fontWeight: isMoreOpen ? 600 : 500, marginTop: 3 }}>
+              More
+            </span>
+          </button>
+
+          {/* Dropdown Menu Box */}
+          <div className={`absolute bottom-[calc(100%+10px)] right-2 mb-2 rounded-2xl overflow-hidden transition-all duration-200 transform origin-bottom-right ${isMoreOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+            style={{ background: '#0d2b1e', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 32px rgba(0,0,0,0.6)', minWidth: 170 }}>
             {links.slice(5).map(({ to, label, icon }) => (
-              <NavLink key={to} to={to}
-                className="flex items-center gap-3 px-4 py-3 text-sm transition-colors"
+              <NavLink key={to} to={to} onClick={() => setIsMoreOpen(false)}
+                className="flex items-center gap-3 px-4 py-3.5 text-sm transition-colors active:bg-white/5"
                 style={{ color: location.pathname.startsWith(to) ? '#f4c430' : '#7fb89a', fontFamily: 'DM Sans, sans-serif' }}>
                 {icon} {label}
               </NavLink>
             ))}
-            <button onClick={logout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm border-t"
+            <button onClick={() => { setIsMoreOpen(false); logout(); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm border-t active:bg-white/5"
               style={{ color: '#f87171', fontFamily: 'DM Sans, sans-serif', borderColor: 'rgba(255,255,255,0.06)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -209,6 +236,7 @@ export default function Sidebar() {
             </button>
           </div>
         </div>
+
       </nav>
     </>
   );
