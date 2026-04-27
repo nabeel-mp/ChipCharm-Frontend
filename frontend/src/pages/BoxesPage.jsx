@@ -10,7 +10,7 @@ const PRODUCT_COLORS = {
   'Salted Banana Chips': '#f4c430',
   'Spicy Banana Chips':  '#f87171',
   'Sweet Banana Chips':  '#fb923c',
-  'Banana 4 Cut':        '#52b788',
+  '4 Cut Banana Chips':  '#52b788', // Updated Name
   'Jaggery':             '#c084fc',
 };
 
@@ -86,14 +86,13 @@ export default function BoxesPage() {
     }
   };
 
-  // Group items by product type for "Boxes" view
   const groupedByProduct = PRODUCT_TYPES.reduce((acc, pt) => {
     const items = packedItems.filter(i => i.product_type === pt);
     if (items.length > 0) acc[pt] = items;
     return acc;
   }, {});
 
-  // Per-product summary: total units by packing type & calculate boxes (18 units = 1 box)
+  // NEW: Only calculate boxes for 'normal_500g'
   const getProductSummary = (items) => {
     const byType = {};
     for (const item of items) {
@@ -103,10 +102,15 @@ export default function BoxesPage() {
       byType[key].total_kg   += item.total_weight_kg || 0;
       byType[key].statuses[item.status] = (byType[key].statuses[item.status] || 0) + item.quantity;
     }
-    // Calculate total boxes (18 units = 1 box) and loose items
+    
     for (const key in byType) {
-      byType[key].boxes = Math.floor(byType[key].total_units / 18);
-      byType[key].loose = byType[key].total_units % 18;
+      if (key === 'normal_500g') {
+        byType[key].boxes = Math.floor(byType[key].total_units / 18);
+        byType[key].loose = byType[key].total_units % 18;
+      } else {
+        byType[key].boxes = 0;
+        byType[key].loose = byType[key].total_units;
+      }
     }
     return byType;
   };
@@ -114,7 +118,10 @@ export default function BoxesPage() {
   const totalUnits   = packedItems.reduce((s, i) => s + i.quantity, 0);
   const totalKg      = packedItems.reduce((s, i) => s + (i.total_weight_kg || 0), 0);
   const inShopUnits  = packedItems.filter(i => i.status === 'in_shop').reduce((s, i) => s + i.quantity, 0);
-  const totalBoxesOverall = Math.floor(totalUnits / 18);
+  
+  // NEW: Overall box count ONLY counts normal_500g packets
+  const normal500gUnits = packedItems.filter(i => i.packing_type === 'normal_500g').reduce((s, i) => s + i.quantity, 0);
+  const totalBoxesOverall = Math.floor(normal500gUnits / 18);
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0a1e14' }}>
@@ -132,17 +139,16 @@ export default function BoxesPage() {
                 </h1>
               </div>
               <p className="text-[#52b788] text-[13px] pl-3.5 mt-1">
-                All packed items — boxes auto-calculated at 18 units per box
+                All packed items — boxes auto-calculated for Normal 500g only
               </p>
             </div>
 
             {/* View toggle + info badge */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-              {/* Auto-box info badge */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
                 style={{ background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.2)', color: '#fb923c' }}>
                 <Icons.Info />
-                <span className="font-syne font-semibold">18 units = 1 box (auto)</span>
+                <span className="font-syne font-semibold">18 units = 1 box (500g Only)</span>
               </div>
 
               <div className="flex gap-1 p-1 rounded-xl w-full sm:w-auto bg-white/5 border border-white/10 shrink-0">
@@ -168,9 +174,9 @@ export default function BoxesPage() {
             <div className="rounded-2xl p-4 sm:p-5 mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 shadow-lg"
               style={{ background: 'linear-gradient(135deg, rgba(251,146,60,0.1), rgba(244,196,48,0.06))', border: '1px solid rgba(251,146,60,0.2)' }}>
               {[
-                { label: 'Total Units',  value: totalUnits,                  unit: 'packs',  color: '#fb923c' },
-                { label: 'Total Boxes',  value: totalBoxesOverall,           unit: 'boxes',  color: '#f4c430' },
-                { label: 'In Shop',      value: inShopUnits,                 unit: 'units',  color: '#52b788' },
+                { label: 'Total Units',  value: totalUnits,                unit: 'packs',  color: '#fb923c' },
+                { label: 'Total Boxes',  value: totalBoxesOverall,         unit: 'boxes',  color: '#f4c430' },
+                { label: 'In Shop',      value: inShopUnits,               unit: 'units',  color: '#52b788' },
                 { label: 'Total Weight', value: `${totalKg.toFixed(1)}`,    unit: 'kg',     color: '#f4c430' },
               ].map(s => (
                 <div key={s.label} className="text-center bg-black/10 rounded-xl py-3 border border-white/5">
@@ -269,7 +275,7 @@ export default function BoxesPage() {
 
                         {/* Packing type breakdown */}
                         <div className="p-4 sm:p-5 border-b border-white/5">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                             {Object.entries(summary).map(([packType, data]) => {
                               const packLabel = PACKING_TYPES.find(t => t.value === packType)?.label || packType;
                               return (
@@ -283,16 +289,18 @@ export default function BoxesPage() {
                                     <span style={{ fontSize: 10, fontWeight: 500, fontFamily: 'DM Sans' }}> units</span>
                                   </div>
 
-                                  {/* AUTO BOXES DISPLAY */}
-                                  <div className="mt-2 py-1.5 rounded-lg flex items-center justify-center gap-1 flex-wrap"
-                                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <span style={{ color: '#f4c430', fontSize: 12, fontWeight: 700, fontFamily: 'Syne, sans-serif' }}>
-                                      {data.boxes} box{data.boxes !== 1 ? 'es' : ''}
-                                    </span>
-                                    {data.loose > 0 && (
-                                      <span style={{ color: '#52b788', fontSize: 10 }}>+{data.loose} loose</span>
-                                    )}
-                                  </div>
+                                  {/* AUTO BOXES DISPLAY - ONLY FOR NORMAL 500g */}
+                                  {packType === 'normal_500g' && (
+                                    <div className="mt-2 py-1.5 rounded-lg flex items-center justify-center gap-1 flex-wrap"
+                                      style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                      <span style={{ color: '#f4c430', fontSize: 12, fontWeight: 700, fontFamily: 'Syne, sans-serif' }}>
+                                        {data.boxes} box{data.boxes !== 1 ? 'es' : ''}
+                                      </span>
+                                      {data.loose > 0 && (
+                                        <span style={{ color: '#52b788', fontSize: 10 }}>+{data.loose} loose</span>
+                                      )}
+                                    </div>
+                                  )}
 
                                   <div style={{ color: '#52b788', fontSize: 11, marginTop: 6 }}>{data.total_kg.toFixed(2)} kg</div>
 
@@ -447,8 +455,8 @@ export default function BoxesPage() {
                           const color = PRODUCT_COLORS[item.product_type] || '#52b788';
                           const ss = STATUS_STYLES[item.status] || STATUS_STYLES.in_shop;
                           const packLabel = PACKING_TYPES.find(t => t.value === item.packing_type)?.label || item.packing_type;
-                          const autoBoxes = Math.floor(item.quantity / 18);
-                          const looseUnits = item.quantity % 18;
+                          const autoBoxes = item.packing_type === 'normal_500g' ? Math.floor(item.quantity / 18) : 0;
+                          const looseUnits = item.packing_type === 'normal_500g' ? item.quantity % 18 : item.quantity;
                           return (
                             <tr key={item._id} className="hover:bg-white/[0.03] transition-colors"
                               style={{ borderBottom: idx < packedItems.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
@@ -474,12 +482,16 @@ export default function BoxesPage() {
                                 {item.quantity}
                               </td>
                               <td className="px-4 py-3 text-right whitespace-nowrap">
-                                <span style={{ color: '#f4c430', fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14 }}>
-                                  {autoBoxes}
-                                </span>
-                                {looseUnits > 0 && (
-                                  <span style={{ color: '#52b788', fontSize: 11 }}> +{looseUnits}</span>
-                                )}
+                                {item.packing_type === 'normal_500g' ? (
+                                  <>
+                                    <span style={{ color: '#f4c430', fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14 }}>
+                                      {autoBoxes}
+                                    </span>
+                                    {looseUnits > 0 && (
+                                      <span style={{ color: '#52b788', fontSize: 11 }}> +{looseUnits}</span>
+                                    )}
+                                  </>
+                                ) : <span style={{ color: '#52b788', fontSize: 11 }}>—</span>}
                               </td>
                               <td className="px-4 py-3 text-right font-bold whitespace-nowrap text-[#f4c430] font-syne">
                                 {item.total_weight_kg?.toFixed(3)}
@@ -514,8 +526,8 @@ export default function BoxesPage() {
                       const color = PRODUCT_COLORS[item.product_type] || '#52b788';
                       const ss = STATUS_STYLES[item.status] || STATUS_STYLES.in_shop;
                       const packLabel = PACKING_TYPES.find(t => t.value === item.packing_type)?.label || item.packing_type;
-                      const autoBoxes = Math.floor(item.quantity / 18);
-                      const looseUnits = item.quantity % 18;
+                      const autoBoxes = item.packing_type === 'normal_500g' ? Math.floor(item.quantity / 18) : 0;
+                      const looseUnits = item.packing_type === 'normal_500g' ? item.quantity % 18 : item.quantity;
                       return (
                         <div key={item._id} className="rounded-xl p-4 border border-white/5 relative shadow-lg"
                           style={{ background: 'linear-gradient(145deg, #132d20, #0f2419)' }}>
@@ -561,7 +573,9 @@ export default function BoxesPage() {
                             <div className="text-center border-l border-white/5">
                               <span className="block text-[10px] text-[#f4c430] uppercase font-syne mb-1">Boxes</span>
                               <span className="text-[#f4c430] text-sm font-bold font-syne">
-                                {autoBoxes}{looseUnits > 0 && <span className="text-[10px] text-[#52b788]">+{looseUnits}</span>}
+                                {item.packing_type === 'normal_500g' ? (
+                                  <>{autoBoxes}{looseUnits > 0 && <span className="text-[10px] text-[#52b788]">+{looseUnits}</span>}</>
+                                ) : '—'}
                               </span>
                             </div>
                             <div className="text-center border-l border-white/5">

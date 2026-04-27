@@ -8,34 +8,35 @@ import { PRODUCT_TYPES } from './StockPage';
 const today = () => new Date().toISOString().split('T')[0];
 
 export const PACKING_TYPES = [
-  { value: 'normal_half_kg', label: 'Normal 500g' },
-  { value: 'normal_1kg',     label: 'Normal 1 kg' },
-  { value: 'jar_small',      label: 'Jar Small'   },
-  { value: 'jar_medium',     label: 'Jar Medium'  },
-  { value: 'jar_large',      label: 'Jar Large'   },
-  { value: 'big_bottle',     label: 'Big Bottle'  },
+  { value: 'normal_500g', label: 'Normal 500g' },
+  { value: 'normal_1kg',  label: 'Normal 1Kg' },
+  { value: 'jar_small',   label: 'Jar Small' },
+  { value: 'jar_medium',  label: 'Jar Medium' },
+  { value: 'bottle',      label: 'Bottle' },
 ];
 
 const DEFAULT_WEIGHTS = {
-  normal_half_kg: 500, normal_1kg: 1000,
-  jar_small: 200, jar_medium: 400, jar_large: 750, big_bottle: 1500,
+  normal_500g: 500, 
+  normal_1kg: 1000,
+  jar_small: 200, 
+  jar_medium: 400, 
+  bottle: 1000,
 };
 
 const PRODUCT_COLORS = {
   'Salted Banana Chips': '#f4c430',
   'Spicy Banana Chips':  '#f87171',
   'Sweet Banana Chips':  '#fb923c',
-  'Banana 4 Cut':        '#52b788',
+  '4 Cut Banana Chips':  '#52b788', // Updated Name Match
   'Jaggery':             '#c084fc',
 };
 
 const typeStyle = {
-  normal_half_kg: { bg: 'rgba(244,196,48,0.1)',  color: '#f4c430',  border: 'rgba(244,196,48,0.2)'  },
-  normal_1kg:     { bg: 'rgba(251,146,60,0.1)',  color: '#fb923c',  border: 'rgba(251,146,60,0.2)'  },
-  jar_small:      { bg: 'rgba(59,130,246,0.1)',  color: '#60a5fa',  border: 'rgba(59,130,246,0.2)'  },
-  jar_medium:     { bg: 'rgba(82,183,136,0.1)',  color: '#52b788',  border: 'rgba(82,183,136,0.2)'  },
-  jar_large:      { bg: 'rgba(168,85,247,0.1)',  color: '#c084fc',  border: 'rgba(168,85,247,0.2)'  },
-  big_bottle:     { bg: 'rgba(148,163,184,0.1)', color: '#94a3b8',  border: 'rgba(148,163,184,0.15)'},
+  normal_500g: { bg: 'rgba(244,196,48,0.1)',  color: '#f4c430',  border: 'rgba(244,196,48,0.2)'  },
+  normal_1kg:  { bg: 'rgba(251,146,60,0.1)',  color: '#fb923c',  border: 'rgba(251,146,60,0.2)'  },
+  jar_small:   { bg: 'rgba(59,130,246,0.1)',  color: '#60a5fa',  border: 'rgba(59,130,246,0.2)'  },
+  jar_medium:  { bg: 'rgba(82,183,136,0.1)',  color: '#52b788',  border: 'rgba(82,183,136,0.2)'  },
+  bottle:      { bg: 'rgba(148,163,184,0.1)', color: '#94a3b8',  border: 'rgba(148,163,184,0.15)'},
 };
 
 const inputStyle = {
@@ -44,8 +45,8 @@ const inputStyle = {
   color: '#e8f5ef',
   fontFamily: 'DM Sans, sans-serif',
   borderRadius: 12,
-  padding: '12px 14px', // Increased padding for mobile touch target
-  fontSize: 15, // Slightly larger for readability
+  padding: '12px 14px', 
+  fontSize: 15, 
   width: '100%',
   outline: 'none',
   transition: 'border-color 0.2s ease',
@@ -54,7 +55,7 @@ const inputStyle = {
 const emptyForm = {
   date: today(),
   product_type: PRODUCT_TYPES[0],
-  packing_type: 'normal_half_kg',
+  packing_type: 'normal_500g', // Updated Default
   weight_per_unit_grams: 500,
   quantity: '',
   label: '',
@@ -117,13 +118,15 @@ export default function PackedPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [filterProduct, setFilterProduct] = useState('');
-  const [viewMode, setViewMode] = useState('summary'); // 'summary' | 'daily'
+  const [viewMode, setViewMode] = useState('summary'); 
 
   const canManage = user?.role === 'manager' || user?.role === 'owner';
 
   const fetchAll = useCallback(() => {
     setLoading(true);
     Promise.all([
+      // Only fetches 'in_shop' items to display available inventory. 
+      // Repacked items will be returned to bulk stock when handled via Supplier Return UI.
       api.get('/packed?status=in_shop'),
       api.get('/packed/available-stock'),
     ])
@@ -453,7 +456,7 @@ export default function PackedPage() {
                       </thead>
                       <tbody>
                         {dailyItems.map((item, idx) => {
-                          const ts = typeStyle[item.packing_type] || typeStyle.normal_half_kg;
+                          const ts = typeStyle[item.packing_type] || typeStyle.normal_500g;
                           const color = PRODUCT_COLORS[item.product_type] || '#52b788';
                           return (
                             <tr key={item._id} className="hover:bg-white/[0.03] transition-colors" style={{ borderBottom: idx < dailyItems.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
@@ -492,7 +495,7 @@ export default function PackedPage() {
                   {/* --- MOBILE CARD VIEW --- */}
                   <div className="md:hidden flex flex-col gap-3">
                     {dailyItems.map(item => {
-                      const ts = typeStyle[item.packing_type] || typeStyle.normal_half_kg;
+                      const ts = typeStyle[item.packing_type] || typeStyle.normal_500g;
                       const color = PRODUCT_COLORS[item.product_type] || '#52b788';
                       return (
                         <div key={item._id} className="rounded-xl p-4 border border-white/5 relative shadow-lg" style={{ background: 'linear-gradient(145deg, #132d20, #0f2419)' }}>

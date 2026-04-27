@@ -11,7 +11,7 @@ export const PRODUCT_TYPES = [
   'Salted Banana Chips',
   'Spicy Banana Chips',
   'Sweet Banana Chips',
-  'Banana 4 Cut',
+  '4 Cut Banana Chips', // Updated Name
   'Jaggery'
 ];
 
@@ -21,8 +21,8 @@ const inputStyle = {
   color: '#e8f5ef',
   fontFamily: 'DM Sans, sans-serif',
   borderRadius: 12,
-  padding: '12px 14px', // Increased padding for better mobile touch target
-  fontSize: 15, // Slightly larger for mobile readability
+  padding: '12px 14px',
+  fontSize: 15,
   width: '100%',
   transition: 'all 0.2s',
   outline: 'none',
@@ -32,18 +32,19 @@ const PRODUCT_COLORS = {
   'Salted Banana Chips': { bg: 'rgba(244,196,48,0.1)', color: '#f4c430', border: 'rgba(244,196,48,0.25)' },
   'Spicy Banana Chips': { bg: 'rgba(239,68,68,0.1)', color: '#f87171', border: 'rgba(239,68,68,0.25)' },
   'Sweet Banana Chips': { bg: 'rgba(251,146,60,0.1)', color: '#fb923c', border: 'rgba(251,146,60,0.25)' },
-  'Banana 4 Cut': { bg: 'rgba(82,183,136,0.1)', color: '#52b788', border: 'rgba(82,183,136,0.25)' },
+  '4 Cut Banana Chips': { bg: 'rgba(82,183,136,0.1)', color: '#52b788', border: 'rgba(82,183,136,0.25)' },
   'Jaggery': { bg: 'rgba(168,85,247,0.1)', color: '#c084fc', border: 'rgba(168,85,247,0.25)' },
 };
 
 // ── CSV Export helper ─────────────────────────────────────────────────────────
 function exportToCSV(entries) {
-  const headers = ['Date', 'Product Type', 'Opening Stock (kg)', 'Produced (kg)', 'Closing Stock (kg)', 'Notes'];
+  const headers = ['Date', 'Product Type', 'Opening Stock (kg)', 'Produced (kg)', 'Repacked Added (kg)', 'Closing Stock (kg)', 'Notes'];
   const rows = entries.map(e => [
     new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
     e.product_type,
     e.opening_stock_kg?.toFixed(2) ?? '0.00',
     e.produced_kg?.toFixed(2) ?? '0.00',
+    e.repacked_added_kg?.toFixed(2) ?? '0.00',
     e.closing_stock_kg?.toFixed(2) ?? '0.00',
     (e.notes || '').replace(/,/g, ';'),
   ]);
@@ -247,7 +248,7 @@ export default function StockPage() {
   const [availStock, setAvailStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ date: today(), product_type: PRODUCT_TYPES[0], produced_kg: '', notes: '' });
+  const [form, setForm] = useState({ date: today(), product_type: PRODUCT_TYPES[0], produced_kg: '', repacked_added_kg: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const [filterType, setFilterType] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -278,7 +279,7 @@ export default function StockPage() {
     try {
       await api.post('/stock', form);
       setShowForm(false);
-      setForm({ date: today(), product_type: PRODUCT_TYPES[0], produced_kg: '', notes: '' });
+      setForm({ date: today(), product_type: PRODUCT_TYPES[0], produced_kg: '', repacked_added_kg: '', notes: '' });
       fetchEntries();
       toast.success('Entry saved!', `${form.produced_kg} kg of ${form.product_type} recorded.`);
     } catch (err) {
@@ -377,7 +378,7 @@ export default function StockPage() {
               </button>
             </div>
 
-            {/* Product Filter Pills - optimized for mobile swipe */}
+            {/* Product Filter Pills */}
             <div className="relative w-full mt-2 -mx-4 px-4 md:mx-0 md:px-0">
               <style>{`.filter-scroll::-webkit-scrollbar { display: none; } .filter-scroll { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
               <div className="flex overflow-x-auto gap-2.5 pb-3 w-full snap-x filter-scroll">
@@ -409,7 +410,7 @@ export default function StockPage() {
               style={{ background: 'linear-gradient(145deg, #132d20, #0f2419)' }}>
               <h2 className="font-syne font-bold text-lg text-[#e8f5ef] mb-5">New Production Entry</h2>
               <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
                   <div>
                     <label className="block text-xs text-[#52b788] mb-2 font-semibold uppercase tracking-wider font-syne">Date</label>
                     <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
@@ -423,6 +424,11 @@ export default function StockPage() {
                   <div>
                     <label className="block text-xs text-[#52b788] mb-2 font-semibold uppercase tracking-wider font-syne">Produced (kg)</label>
                     <input type="number" step="0.1" min="0" required value={form.produced_kg} onChange={e => setForm({ ...form, produced_kg: e.target.value })} style={inputStyle} placeholder="e.g. 50" />
+                  </div>
+                  {/* NEW: Repacked Input */}
+                  <div>
+                    <label className="block text-xs text-[#52b788] mb-2 font-semibold uppercase tracking-wider font-syne">Repacked Added (kg)</label>
+                    <input type="number" step="0.1" min="0" value={form.repacked_added_kg} onChange={e => setForm({ ...form, repacked_added_kg: e.target.value })} style={inputStyle} placeholder="e.g. 2.5" />
                   </div>
                 </div>
                 <div className="mb-6">
@@ -468,8 +474,8 @@ export default function StockPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-white/10 bg-black/20">
-                      {['Date', 'Product', 'Opening kg', 'Produced kg', 'Closing kg', 'Notes', ''].map((h, i) => (
-                        <th key={i} className={`py-4 px-5 text-xs font-semibold uppercase tracking-widest ${[2, 3, 4].includes(i) ? 'text-right' : 'text-left'}`} style={{ color: '#52b788', fontFamily: 'Syne, sans-serif' }}>
+                      {['Date', 'Product', 'Opening kg', 'Produced kg', 'Repacked kg', 'Closing kg', 'Notes', ''].map((h, i) => (
+                        <th key={i} className={`py-4 px-4 text-xs font-semibold uppercase tracking-widest ${[2, 3, 4, 5].includes(i) ? 'text-right' : 'text-left'}`} style={{ color: '#52b788', fontFamily: 'Syne, sans-serif' }}>
                           {h}
                         </th>
                       ))}
@@ -480,19 +486,20 @@ export default function StockPage() {
                       const col = PRODUCT_COLORS[e.product_type];
                       return (
                         <tr key={e._id} className="hover:bg-white/[0.03] transition-colors" style={{ borderBottom: idx < entries.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                          <td className="px-5 py-4 whitespace-nowrap font-syne font-semibold text-[#e8f5ef]">
+                          <td className="px-4 py-4 whitespace-nowrap font-syne font-semibold text-[#e8f5ef]">
                             {new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <span className="px-3 py-1.5 rounded-lg text-xs font-semibold font-syne" style={{ background: col?.bg, color: col?.color, border: `1px solid ${col?.border}` }}>
                               {e.product_type}
                             </span>
                           </td>
-                          <td className="px-5 py-4 text-right text-[#7fb89a]">{e.opening_stock_kg?.toFixed(2)}</td>
-                          <td className="px-5 py-4 text-right font-bold font-syne text-[#f4c430]">{e.produced_kg?.toFixed(2)}</td>
-                          <td className="px-5 py-4 text-right font-bold font-syne text-[#52b788]">{e.closing_stock_kg?.toFixed(2)}</td>
-                          <td className="px-5 py-4 text-[#2d6a4f] text-xs truncate max-w-[200px]">{e.notes || '—'}</td>
-                          <td className="px-5 py-4 text-right">
+                          <td className="px-4 py-4 text-right text-[#7fb89a]">{e.opening_stock_kg?.toFixed(2)}</td>
+                          <td className="px-4 py-4 text-right font-bold font-syne text-[#f4c430]">{e.produced_kg?.toFixed(2)}</td>
+                          <td className="px-4 py-4 text-right font-bold font-syne text-[#fb923c]">{e.repacked_added_kg?.toFixed(2) || '0.00'}</td>
+                          <td className="px-4 py-4 text-right font-bold font-syne text-[#52b788]">{e.closing_stock_kg?.toFixed(2)}</td>
+                          <td className="px-4 py-4 text-[#2d6a4f] text-xs truncate max-w-[200px]">{e.notes || '—'}</td>
+                          <td className="px-4 py-4 text-right">
                             {canManage && (
                               <button onClick={() => handleDelete(e._id)} className="px-3 py-1.5 rounded-lg text-xs font-dm hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all border border-white/10 text-[#7fb89a]">
                                 Delete
@@ -528,16 +535,20 @@ export default function StockPage() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 bg-black/20 rounded-xl p-3 mb-2 border border-white/5">
+                      <div className="grid grid-cols-4 gap-2 bg-black/20 rounded-xl p-3 mb-2 border border-white/5">
                         <div className="text-center">
                           <span className="block text-[10px] text-[#52b788] uppercase font-syne mb-1">Opening</span>
                           <span className="text-[#7fb89a] text-sm font-dm">{e.opening_stock_kg?.toFixed(2)}</span>
                         </div>
-                        <div className="text-center border-l border-r border-white/5">
+                        <div className="text-center border-l border-white/5">
                           <span className="block text-[10px] text-[#f4c430] uppercase font-syne mb-1">Produced</span>
                           <span className="text-[#f4c430] text-sm font-bold font-syne">{e.produced_kg?.toFixed(2)}</span>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center border-l border-white/5">
+                          <span className="block text-[10px] text-[#fb923c] uppercase font-syne mb-1">Repacked</span>
+                          <span className="text-[#fb923c] text-sm font-bold font-syne">{e.repacked_added_kg?.toFixed(2) || '0.00'}</span>
+                        </div>
+                        <div className="text-center border-l border-white/5">
                           <span className="block text-[10px] text-[#52b788] uppercase font-syne mb-1">Closing</span>
                           <span className="text-[#52b788] text-sm font-bold font-syne">{e.closing_stock_kg?.toFixed(2)}</span>
                         </div>
@@ -554,7 +565,6 @@ export default function StockPage() {
               </div>
             </>
           )}
-
         </div>
       </main>
     </div>
