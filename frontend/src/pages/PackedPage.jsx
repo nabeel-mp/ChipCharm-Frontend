@@ -107,11 +107,68 @@ function PacketSummaryCard({ productType, items, color }) {
   );
 }
 
+function buildAvailableItems(currentPackedItems, trips) {
+  const merged = new Map();
+
+  for (const item of currentPackedItems) {
+    const key = `${item.product_type}|||${item.packing_type}`;
+    merged.set(key, {
+      ...item,
+      quantity: Number(item.quantity) || 0,
+      total_weight_kg: Number(item.total_weight_kg) || 0,
+      status: 'in_shop',
+    });
+  }
+
+  for (const trip of trips) {
+    for (const item of (trip.returned_items || [])) {
+      if (item.reason !== 'unsold' || !(Number(item.quantity) > 0)) continue;
+
+      const key = `${item.product_type}|||${item.packing_type}`;
+      const weightPerUnit = Number(item.weight_per_unit_grams) || DEFAULT_WEIGHTS[item.packing_type] || 0;
+      const quantity = Number(item.quantity) || 0;
+      const totalWeightKg = (weightPerUnit * quantity) / 1000;
+
+      if (!merged.has(key)) {
+        merged.set(key, {
+          _id: `returned-${key}`,
+          product_type: item.product_type,
+          packing_type: item.packing_type,
+          weight_per_unit_grams: weightPerUnit,
+          quantity: 0,
+          total_weight_kg: 0,
+          status: 'in_shop',
+          label: 'Unsold Return',
+        });
+      }
+
+      const existing = merged.get(key);
+      existing.quantity += quantity;
+      existing.total_weight_kg += totalWeightKg;
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
+function getUnsoldReturnedUnits(trips, productType = null) {
+  return trips.reduce((sum, trip) => {
+    return sum + (trip.returned_items || []).reduce((itemSum, item) => {
+      if (item.reason !== 'unsold') return itemSum;
+      if (productType && item.product_type !== productType) return itemSum;
+      return itemSum + (Number(item.quantity) || 0);
+    }, 0);
+  }, 0);
+}
+
 // ── Main Packed Page ──────────────────────────────────────────────────────────
 export default function PackedPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [items, setItems] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [currentItems, setCurrentItems] = useState([]);
+  const [logItems, setLogItems] = useState([]);
+  const [supplierTrips, setSupplierTrips] = useState([]);
   const [stockInfo, setStockInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -125,14 +182,18 @@ export default function PackedPage() {
   const fetchAll = useCallback(() => {
     setLoading(true);
     Promise.all([
-      // Only fetches 'in_shop' items to display available inventory. 
-      // Repacked items will be returned to bulk stock when handled via Supplier Return UI.
+      api.get('/dashboard/summary'),
+      api.get('/packed'),
       api.get('/packed?status=in_shop'),
       api.get('/packed/available-stock'),
+      api.get('/supplier-trips'),
     ])
-      .then(([packedRes, stockRes]) => {
-        setItems(packedRes.data);
+      .then(([dashRes, logRes, currentRes, stockRes, tripsRes]) => {
+        setDashboardData(dashRes.data);
+        setLogItems(logRes.data);
+        setCurrentItems(currentRes.data);
         setStockInfo(stockRes.data);
+        setSupplierTrips(tripsRes.data);
       })
       .catch(() => toast.error('Fetch failed', 'Could not load packed items.'))
       .finally(() => setLoading(false));
@@ -184,18 +245,27 @@ export default function PackedPage() {
     }
   };
 
+  const availableItems = buildAvailableItems(currentItems, supplierTrips);
+
   // Group items by product for summary view
   const byProduct = PRODUCT_TYPES.reduce((acc, pt) => {
-    acc[pt] = items.filter(i => i.product_type === pt);
+    acc[pt] = availableItems.filter(i => i.product_type === pt);
     return acc;
   }, {});
 
-  const totalPackets = items.reduce((s, i) => s + i.quantity, 0);
+  const totalPackets = availableItems.reduce((s, i) => s + i.quantity, 0);
+  const unsoldReturnedUnits = getUnsoldReturnedUnits(supplierTrips);
+  const exactAvailablePackets =
+    (dashboardData?.packed_summary?.find(p => p._id === 'in_shop')?.total_units ?? totalPackets) + unsoldReturnedUnits;
+  const getExactProductPackets = (productType) =>
+    (dashboardData?.packed_by_product?.find(p => p._id === productType)?.in_shop
+      ?? availableItems.filter(i => i.product_type === productType).reduce((s, i) => s + i.quantity, 0))
+    + getUnsoldReturnedUnits(supplierTrips, productType);
 
   // Daily entries sorted
   const dailyItems = filterProduct
-    ? items.filter(i => i.product_type === filterProduct)
-    : items;
+    ? logItems.filter(i => i.product_type === filterProduct)
+    : logItems;
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0a1e14' }}>
@@ -244,17 +314,17 @@ export default function PackedPage() {
           </div>
 
           {/* Total packets banner */}
-          {!loading && totalPackets > 0 && (
+          {!loading && exactAvailablePackets > 0 && (
             <div className="rounded-2xl p-4 sm:px-6 sm:py-5 mb-6 flex items-start sm:items-center justify-between flex-col md:flex-row gap-4 shadow-lg"
               style={{ background: 'linear-gradient(135deg, rgba(244,196,48,0.1), rgba(82,183,136,0.06))', border: '1px solid rgba(244,196,48,0.2)' }}>
               <div className="w-full md:w-auto border-b border-white/10 md:border-none pb-4 md:pb-0">
                 <div style={{ color: '#52b788', fontSize: 11, fontFamily: 'Syne, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Available Packets</div>
-                <div style={{ color: '#f4c430', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 36, lineHeight: 1.1, marginTop: 4 }}>{totalPackets}</div>
+                <div style={{ color: '#f4c430', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 36, lineHeight: 1.1, marginTop: 4 }}>{exactAvailablePackets}</div>
                 <div style={{ color: '#52b788', fontSize: 13, marginTop: 2 }}>units across all products</div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
                 {PRODUCT_TYPES.map(pt => {
-                  const count = items.filter(i => i.product_type === pt).reduce((s, i) => s + i.quantity, 0);
+                  const count = getExactProductPackets(pt);
                   if (!count) return null;
                   const color = PRODUCT_COLORS[pt] || '#52b788';
                   return (

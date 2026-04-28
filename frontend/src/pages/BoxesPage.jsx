@@ -6,6 +6,14 @@ import { useAuth } from '../context/AuthContext';
 import { PRODUCT_TYPES } from './StockPage';
 import { PACKING_TYPES } from './PackedPage';
 
+const DEFAULT_WEIGHTS = {
+  normal_500g: 500,
+  normal_1kg: 1000,
+  jar_small: 200,
+  jar_medium: 400,
+  bottle: 1000,
+};
+
 const PRODUCT_COLORS = {
   'Salted Banana Chips': '#f4c430',
   'Spicy Banana Chips':  '#f87171',
@@ -51,10 +59,56 @@ const Icons = {
   ),
 };
 
+function buildAvailableItems(currentPackedItems, trips) {
+  const merged = new Map();
+
+  for (const item of currentPackedItems) {
+    const key = `${item.product_type}|||${item.packing_type}`;
+    merged.set(key, {
+      ...item,
+      quantity: Number(item.quantity) || 0,
+      total_weight_kg: Number(item.total_weight_kg) || 0,
+      status: 'in_shop',
+    });
+  }
+
+  for (const trip of trips) {
+    for (const item of (trip.returned_items || [])) {
+      if (item.reason !== 'unsold' || !(Number(item.quantity) > 0)) continue;
+
+      const key = `${item.product_type}|||${item.packing_type}`;
+      const weightPerUnit = Number(item.weight_per_unit_grams) || DEFAULT_WEIGHTS[item.packing_type] || 0;
+      const quantity = Number(item.quantity) || 0;
+      const totalWeightKg = (weightPerUnit * quantity) / 1000;
+
+      if (!merged.has(key)) {
+        merged.set(key, {
+          _id: `returned-${key}`,
+          product_type: item.product_type,
+          packing_type: item.packing_type,
+          weight_per_unit_grams: weightPerUnit,
+          quantity: 0,
+          total_weight_kg: 0,
+          status: 'in_shop',
+          label: 'Unsold Return',
+        });
+      }
+
+      const existing = merged.get(key);
+      existing.quantity += quantity;
+      existing.total_weight_kg += totalWeightKg;
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
 export default function BoxesPage() {
   const { user } = useAuth();
   const toast = useToast();
   const [packedItems, setPackedItems] = useState([]);
+  const [inShopItems, setInShopItems] = useState([]);
+  const [supplierTrips, setSupplierTrips] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [filterProduct, setFilterProduct] = useState('');
   const [filterStatus, setFilterStatus]   = useState('');
@@ -67,13 +121,31 @@ export default function BoxesPage() {
     const params = new URLSearchParams();
     if (filterProduct) params.append('product_type', filterProduct);
     if (filterStatus)  params.append('status', filterStatus);
-    api.get(`/packed?${params}`)
-      .then(r => setPackedItems(r.data))
+    Promise.all([
+      api.get(`/packed?${params}`),
+      api.get('/packed?status=in_shop'),
+      api.get('/supplier-trips'),
+    ])
+      .then(([packedRes, inShopRes, tripsRes]) => {
+        setInShopItems(inShopRes.data);
+        setSupplierTrips(tripsRes.data);
+
+        const visibleItems = filterStatus === 'in_shop'
+          ? buildAvailableItems(inShopRes.data, tripsRes.data)
+          : packedRes.data;
+
+        setPackedItems(visibleItems);
+      })
       .catch(() => toast.error('Fetch failed', 'Could not load packed items.'))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchItems(); }, [filterProduct, filterStatus]);
+
+  const availableItems = buildAvailableItems(
+    inShopItems,
+    supplierTrips
+  );
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this packed entry? Bulk stock will be restored.')) return;
@@ -87,7 +159,7 @@ export default function BoxesPage() {
   };
 
   const groupedByProduct = PRODUCT_TYPES.reduce((acc, pt) => {
-    const items = packedItems.filter(i => i.product_type === pt);
+    const items = availableItems.filter(i => i.product_type === pt);
     if (items.length > 0) acc[pt] = items;
     return acc;
   }, {});
@@ -115,12 +187,12 @@ export default function BoxesPage() {
     return byType;
   };
 
-  const totalUnits   = packedItems.reduce((s, i) => s + i.quantity, 0);
-  const totalKg      = packedItems.reduce((s, i) => s + (i.total_weight_kg || 0), 0);
-  const inShopUnits  = packedItems.filter(i => i.status === 'in_shop').reduce((s, i) => s + i.quantity, 0);
+  const totalUnits   = availableItems.reduce((s, i) => s + i.quantity, 0);
+  const totalKg      = availableItems.reduce((s, i) => s + (i.total_weight_kg || 0), 0);
+  const inShopUnits  = availableItems.reduce((s, i) => s + i.quantity, 0);
   
   // NEW: Overall box count ONLY counts normal_500g packets
-  const normal500gUnits = packedItems.filter(i => i.packing_type === 'normal_500g').reduce((s, i) => s + i.quantity, 0);
+  const normal500gUnits = availableItems.filter(i => i.packing_type === 'normal_500g').reduce((s, i) => s + i.quantity, 0);
   const totalBoxesOverall = Math.floor(normal500gUnits / 18);
 
   return (

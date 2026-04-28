@@ -41,19 +41,23 @@ const RETURN_REASONS = [
   { value: 'other',         label: 'Other'         },
 ];
 
+const BOX_PACKING_TYPE = 'normal_500g';
+
 const DEFAULT_WEIGHTS = {
-  normal_half_kg: 500, normal_1kg: 1000,
-  jar_small: 200, jar_medium: 400, jar_large: 750, big_bottle: 1500,
+  normal_500g: 500,
+  normal_1kg: 1000,
+  jar_small: 200,
+  jar_medium: 400,
+  bottle: 1000,
 };
 
 const DEFAULT_UNITS_PER_BOX = {
-  normal_half_kg: 18, normal_1kg: 12,
-  jar_small: 24, jar_medium: 20, jar_large: 12, big_bottle: 6,
+  normal_500g: 18,
 };
 
 const emptyCarryItem = () => ({
   product_type:          PRODUCT_TYPES[0],
-  packing_type:          'normal_half_kg',
+  packing_type:          BOX_PACKING_TYPE,
   weight_per_unit_grams: 500,
   quantity:              '',
   use_boxes:             false,
@@ -63,12 +67,14 @@ const emptyCarryItem = () => ({
 
 const emptyReturnItem = () => ({
   product_type:          PRODUCT_TYPES[0],
-  packing_type:          'normal_half_kg',
+  packing_type:          BOX_PACKING_TYPE,
   weight_per_unit_grams: 500,
   quantity:              '',
   reason:                'unsold',
   notes:                 ''
 });
+
+const isBoxPackingType = (packingType) => packingType === BOX_PACKING_TYPE;
 
 export default function SupplierTripsPage() {
   const { user }  = useAuth();
@@ -144,6 +150,7 @@ export default function SupplierTripsPage() {
 
   // Get available boxes (floor of available_units / units_per_box)
   const getAvailableBoxes = (product_type, packing_type, units_per_box = 18) => {
+    if (!isBoxPackingType(packing_type)) return 0;
     const available = getAvailableUnits(product_type, packing_type);
     return Math.floor(available / units_per_box);
   };
@@ -160,6 +167,10 @@ export default function SupplierTripsPage() {
       if (field === 'packing_type') {
         items[i].weight_per_unit_grams = DEFAULT_WEIGHTS[val] || 500;
         items[i].units_per_box         = DEFAULT_UNITS_PER_BOX[val] || 18;
+        if (!isBoxPackingType(val)) {
+          items[i].use_boxes = false;
+          items[i].boxes_count = '';
+        }
         if (items[i].use_boxes && items[i].boxes_count) {
           items[i].quantity = String(Number(items[i].boxes_count) * items[i].units_per_box);
         }
@@ -170,6 +181,11 @@ export default function SupplierTripsPage() {
         }
       }
       if (field === 'use_boxes') {
+        if (val && !isBoxPackingType(items[i].packing_type)) {
+          items[i].use_boxes = false;
+          items[i].boxes_count = '';
+          return { ...f, carried_out: items };
+        }
         if (val && items[i].boxes_count) {
           items[i].quantity = String(Number(items[i].boxes_count) * (items[i].units_per_box || 18));
         }
@@ -480,7 +496,8 @@ export default function SupplierTripsPage() {
                       const availBoxes = getAvailableBoxes(item.product_type, item.packing_type, item.units_per_box || 18);
                       const availUnits = getAvailableUnits(item.product_type, item.packing_type);
                       const hasStock   = availUnits > 0;
-                      const hasBoxes   = availBoxes > 0;
+                      const canUseBoxes = isBoxPackingType(item.packing_type);
+                      const hasBoxes   = canUseBoxes && availBoxes > 0;
 
                       return (
                         <div key={i} className="rounded-xl p-4 shadow-inner"
@@ -514,7 +531,7 @@ export default function SupplierTripsPage() {
                                   : { background: 'rgba(255,255,255,0.02)', color: '#2d6a4f', border: '1px solid rgba(255,255,255,0.05)', fontFamily: 'DM Sans' }
                               }>
                               <Icons.Box />
-                              {!hasBoxes ? 'No Boxes' : item.use_boxes ? 'Box Mode ON' : 'Use Boxes'}
+                              {!canUseBoxes ? '500g Only' : !hasBoxes ? 'No Boxes' : item.use_boxes ? 'Box Mode ON' : 'Use Boxes'}
                             </button>
                           </div>
 
@@ -526,10 +543,13 @@ export default function SupplierTripsPage() {
                               <span style={{ color: '#7fb89a' }}>
                                 In Shop: <strong style={{ color: hasStock ? '#52b788' : '#f87171' }}>{availUnits} units</strong>
                               </span>
-                              {item.use_boxes && (
+                              {canUseBoxes && (
                                 <span style={{ color: '#7fb89a' }}>
                                   Available Boxes: <strong style={{ color: hasBoxes ? '#f4c430' : '#f87171' }}>{availBoxes}</strong>
                                 </span>
+                              )}
+                              {!canUseBoxes && (
+                                <span style={{ color: '#fb923c', fontSize: 11 }}>Boxes only for Normal 500g packing</span>
                               )}
                               {!hasStock && (
                                 <span style={{ color: '#f87171', fontSize: 11 }}>⚠ No packed stock in shop</span>
