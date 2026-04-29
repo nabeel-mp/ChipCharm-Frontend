@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api' });
+const api = axios.create({ 
+  // Use Vercel's environment variable in production, fallback to '/api' for local dev
+  baseURL: import.meta.env.VITE_API_URL || '/api' 
+});
 
 // Attach JWT to every request automatically
 api.interceptors.request.use((config) => {
